@@ -1,0 +1,85 @@
+#!/usr/bin/env php
+<?php
+
+require_once './vendor/autoload.php';
+
+use Pharborist\Filter;
+use Pharborist\Functions\FunctionCallNode;
+use Pharborist\Functions\FunctionDeclarationNode;
+use Pharborist\Node;
+use Pharborist\Parser;
+use Pharborist\RootNode;
+use Pharborist\Variables\VariableNode;
+
+function find_variables(RootNode $doc)
+{
+    $variables = [];
+
+    $filter = Filter::isInstanceOf(VariableNode::class);
+
+    /** @var VariableNode $variable */
+    foreach ($doc->find($filter) as $variable)
+    {
+        $key = $variable->getName();
+
+        if ($key == 'argv' || $key == 'argc')
+        {
+            continue;
+        }
+        $variables[$key] = uniqid('ernst_');
+    }
+    return $variables;
+}
+
+function translate_variables(RootNode $doc, array $variables)
+{
+    $filter = function (Node $node) use ($variables)
+    {
+        return $node instanceof VariableNode && array_key_exists($node->getName(),
+            $variables);
+    };
+
+    /** @var VariableNode $variable */
+    foreach ($doc->find($filter) as $variable)
+    {
+        $key = $variable->getName();
+        $variable->setName($variables[$key]);
+    }
+}
+
+function find_functions(RootNode $doc)
+{
+    $functions = [];
+
+    $filter = Filter::isInstanceOf(FunctionDeclarationNode::class);
+
+    /** @var FunctionDeclarationNode $function */
+    foreach ($doc->find($filter) as $function)
+    {
+        $key = $function->getName()->getBaseName();
+        $functions[$key] = uniqid('ernst_');
+    }
+    return $functions;
+}
+
+function translate_functions(RootNode $doc, array $functions)
+{
+    $filter = function (Node $node) use ($functions)
+    {
+        return
+          ($node instanceof FunctionDeclarationNode || $node instanceof FunctionCallNode) &&
+          array_key_exists($node->getName()->getBaseName(), $functions);
+    };
+
+    /** @var FunctionDeclarationNode|FunctionCallNode $function */
+    foreach ($doc->find($filter) as $function)
+    {
+        $key = $function->getName()->getBaseName();
+        $function->setName($functions[$key]);
+    }
+}
+
+$doc = Parser::parseFile($argv[1]);
+translate_variables($doc, find_variables($doc));
+translate_functions($doc, find_functions($doc));
+echo $doc;

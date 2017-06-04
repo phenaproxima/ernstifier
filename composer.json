@@ -1,0 +1,6 @@
+{
+    "minimum-stability": "dev",
+    "require": {
+        "grom358/pharborist": "dev-master"
+    }
+}
