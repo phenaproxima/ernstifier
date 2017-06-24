@@ -6,6 +6,7 @@ require_once './vendor/autoload.php';
 use Pharborist\Filter;
 use Pharborist\Functions\FunctionCallNode;
 use Pharborist\Functions\FunctionDeclarationNode;
+use Pharborist\Namespaces\NameNode;
 use Pharborist\Node;
 use Pharborist\Parser;
 use Pharborist\RootNode;
@@ -67,8 +68,10 @@ function translate_functions(RootNode $doc, array $functions)
     $filter = function (Node $node) use ($functions)
     {
         return
-          ($node instanceof FunctionDeclarationNode || $node instanceof FunctionCallNode) &&
-          array_key_exists($node->getName()->getBaseName(), $functions);
+          ($node instanceof FunctionCallNode || $node instanceof FunctionDeclarationNode) &&
+          ($name = $node->getName()) &&
+          $name instanceof NameNode &&
+          array_key_exists($name->getBaseName(), $functions);
     };
 
     /** @var FunctionDeclarationNode|FunctionCallNode $function */
